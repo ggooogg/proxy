@@ -1,15 +1,16 @@
 # Proxy - GitHub 文件及 API 加速
 
-基于 EdgeOne 边缘函数的 GitHub 代理服务，通过全球节点加速 GitHub 资源访问，提升下载速度与访问体验。
+基于 EdgeOne 边缘函数的代理服务，通过全球节点加速 GitHub 资源访问，同时支持任意链接的云函数代理转发，提升下载速度与访问体验。
 
 ## 功能特性
 
-- **高速下载** — 全球边缘节点加速，大幅提升 GitHub 文件下载速度
-- **API 加速** — 支持 GitHub API 请求代理加速
+- **GitHub 多节点加速** — 自动抓取 gh-proxy.com 全球节点，支持随机或指定节点加速
+- **通用链接代理** — 非 GitHub 链接通过云函数代理转发（限 6M 以内），如 API 接口、图片等
+- **API 加速** — 支持 GitHub API 及第三方 API 请求代理加速
 - **安全可靠** — 透明代理，不修改任何文件内容
 - **协议还原** — 支持 `ht-tps` / `ht-tp` 协议占位符还原为 `https` / `http`，防止链接被平台拦截
 - **智能分流** — 文本类响应缓冲读取，二进制响应流式转发，避免大文件 OOM
-- **暗色模式** — 前端页面支持亮色/暗色主题切换
+- **暗色模式** — 前端页面支持亮色/暗色主题切换，自动跟随系统偏好
 
 ## 项目结构
 
@@ -65,7 +66,12 @@ edgeone makers dev
 
 ### 前端页面
 
-直接在页面输入框中粘贴 GitHub 链接，点击「加速访问」即可在新窗口打开加速后的链接。
+直接在页面输入框中粘贴链接，点击「加速访问」即可在新窗口打开加速后的链接。
+
+- **GitHub 链接**：自动走多节点加速，可通过下拉框选择随机节点或指定节点
+- **非 GitHub 链接**：自动通过云函数代理转发（限 6M 以内）
+- 支持回车键快速提交
+- 点击示例项可快速填入输入框，点击「复制」可复制加速后的链接
 
 ### API 调用
 
@@ -77,7 +83,7 @@ GET /p?url=<目标URL>
 
 | 参数 | 必填 | 说明 |
 |---|---|---|
-| `url` | 是 | 目标 GitHub URL，支持带 `https://` 或不带的格式 |
+| `url` | 是 | 目标 URL，支持带 `https://` 或不带的格式 |
 
 **协议占位符：**
 
@@ -88,21 +94,36 @@ GET /p?url=<目标URL>
 **示例：**
 
 ```
-# 加速下载 Release 文件
+# 加速下载 GitHub Release 文件
 /p?url=ht-tps://github.com/user/repo/releases/download/v1.0/file.zip
 
-# 加速 API 请求
+# 加速 GitHub API 请求
 /p?url=ht-tps://api.github.com/repos/user/repo
+
+# 代理第三方 API 接口
+/p?url=ht-tps://movie.douban.com/j/search_subjects?type=movie&tag=热门
+
+# 代理图片资源
+/p?url=ht-tps://cn.bing.com/th?id=OHR.SaguaroSun_EN-US8982109543_UHD.jpg
 ```
 
 ### 支持的资源类型
 
+**GitHub 资源：**
+
 - 分支源码包（zip / tar.gz）
 - Release 源码包
 - Release 附件文件
-- Commit 文件
+- 仓库文件（blob）
+- Raw 文件
 - Gist 文件
 - GitHub API 接口
+
+**非 GitHub 资源（限 6M 以内）：**
+
+- 第三方 API 接口
+- 图片、文件等资源
+- 任意可通过 HTTP/HTTPS 访问的链接
 
 ## 部署
 

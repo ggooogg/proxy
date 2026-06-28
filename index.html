@@ -74,14 +74,15 @@
 
         body {
             height: 100vh;
+            padding: 0 16%;
             background-color: var(--bg-primary);
             color: var(--text-primary);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             line-height: 1.6;
-            overflow: hidden;
+            overflow: auto;
             transition: background-color 0.3s, color 0.3s;
         }
 
@@ -103,6 +104,7 @@
             max-width: 1100px;
             position: relative;
             z-index: 1;
+            margin: 5vh 0;
         }
 
         /* ========== 主题切换按钮 ========== */
@@ -661,7 +663,7 @@
                 <path
                     d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75zm.75-2.75a1 1 0 1 1 2 0 1 1 0 0 1-2 0z" />
             </svg>
-            <span>GitHub 链接自动走多节点加速，其他链接通过云函数代理转发。暂不支持文件夹下载。</span>
+            <span>GitHub 链接自动走多节点加速，其他链接通过云函数代理转发（限 6M 以内）。暂不支持文件夹下载。</span>
         </div>
 
         <div class="features">
@@ -720,6 +722,18 @@
             <div class="example-item" data-url="https://api.github.com/repos/vuejs/core">
                 <span class="example-label">API</span>
                 <span class="example-url">api.github.com/repos/vuejs/core</span>
+                <button class="example-copy">复制</button>
+            </div>
+            <div class="example-item"
+                data-url="https://movie.douban.com/j/search_subjects?type=movie&tag=%E7%83%AD%E9%97%A8&sort=recommend&page_limit=16">
+                <span class="example-label">豆瓣接口</span>
+                <span class="example-url">movie.douban.com/j/search_subjects?type=movie&tag=热门...</span>
+                <button class="example-copy">复制</button>
+            </div>
+            <div class="example-item"
+                data-url="https://cn.bing.com/th?id=OHR.SaguaroSun_EN-US8982109543_UHD.jpg&rf=LaDigue_UHD.jpg&pid=hp&w=3840&h=2160&rs=1&c=4">
+                <span class="example-label">Bing 图片</span>
+                <span class="example-url">cn.bing.com/th?id=OHR.SaguaroSun_EN-US8982109543...</span>
                 <button class="example-copy">复制</button>
             </div>
         </div>
