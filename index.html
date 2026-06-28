@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub文件及api加速</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        /* ========== 亮色主题（默认） ========== */
+        :root,
+        [data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f6f8fa;
+            --bg-tertiary: #f0f2f5;
+            --bg-card: #ffffff;
+            --bg-input: #f6f8fa;
+            --bg-overlay: rgba(0, 0, 0, 0.04);
+            --border-primary: #d0d7de;
+            --border-secondary: #e1e4e8;
+            --text-primary: #1f2328;
+            --text-secondary: #656d76;
+            --text-tertiary: #8b949e;
+            --accent: #5865f2;
+            --accent-hover: #4752c4;
+            --accent-bg: rgba(88, 101, 242, 0.06);
+            --accent-border: rgba(88, 101, 242, 0.3);
+            --link-color: #0969da;
+            --success: #1a7f37;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+            --gradient-bg: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(88, 101, 242, 0.08), transparent),
+                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(137, 87, 229, 0.04), transparent),
+                radial-gradient(ellipse 50% 30% at 20% 80%, rgba(56, 139, 253, 0.04), transparent);
+            --toast-bg: #1f2328;
+            --toast-color: #ffffff;
+        }
+
+        /* ========== 暗色主题 ========== */
+        [data-theme="dark"] {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #1c2128;
+            --bg-card: #161b22;
+            --bg-input: #0d1117;
+            --bg-overlay: rgba(255, 255, 255, 0.03);
+            --border-primary: #30363d;
+            --border-secondary: #21262d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-tertiary: #6e7681;
+            --accent: #5865f2;
+            --accent-hover: #7983f5;
+            --accent-bg: rgba(88, 101, 242, 0.08);
+            --accent-border: rgba(88, 101, 242, 0.25);
+            --link-color: #58a6ff;
+            --success: #3fb950;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+            --gradient-bg: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(88, 101, 242, 0.12), transparent),
+                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(137, 87, 229, 0.06), transparent),
+                radial-gradient(ellipse 50% 30% at 20% 80%, rgba(56, 139, 253, 0.06), transparent);
+            --toast-bg: #2d333b;
+            --toast-color: #e6edf3;
+        }
+
+        body {
+            height: 100vh;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.6;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-bg);
+            pointer-events: none;
+            z-index: 0;
+            transition: background 0.3s;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ========== 主题切换按钮 ========== */
+        .theme-toggle {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            z-index: 10;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-md);
+            transform: scale(1.05);
+        }
+
+        .theme-toggle svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--text-secondary);
+            transition: fill 0.3s;
+        }
+
+        .theme-toggle:hover svg {
+            fill: var(--accent);
+        }
+
+        .theme-toggle .icon-sun {
+            display: none;
+        }
+
+        .theme-toggle .icon-moon {
+            display: block;
+        }
+
+        [data-theme="dark"] .theme-toggle .icon-sun {
+            display: block;
+        }
+
+        [data-theme="dark"] .theme-toggle .icon-moon {
+            display: none;
+        }
+
+        /* ========== 头部 ========== */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #5865f2, #8957e5);
+            border-radius: 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 8px 24px rgba(88, 101, 242, 0.25);
+        }
+
+        .logo svg {
+            width: 34px;
+            height: 34px;
+            fill: white;
+        }
+
+        h1 {
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 2.2rem;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.15rem;
+        }
+
+        /* ========== 输入区域 ========== */
+        .search-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            border-radius: 14px;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 14px;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.6s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .search-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-border), var(--shadow-md);
+        }
+
+        .search-icon {
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            color: var(--text-tertiary);
+        }
+
+        .search-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 14px 10px;
+            font-size: 17px;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .url-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .submit-btn {
+            padding: 13px 32px;
+            background: linear-gradient(135deg, #5865f2, #8957e5);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 17px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(88, 101, 242, 0.35);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* ========== 节点选择下拉框 ========== */
+        .node-select {
+            padding: 13px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-secondary);
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%23656d76' d='M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 28px;
+            max-width: 160px;
+            transition: border-color 0.3s;
+        }
+
+        .node-select:hover,
+        .node-select:focus {
+            border-color: var(--accent);
+        }
+
+        .submit-btn {
+            border-radius: 0 10px 10px 0;
+        }
+
+        /* ========== 提示条 ========== */
+        .tips {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--accent-bg);
+            border: 1px solid var(--accent-border);
+            border-radius: 10px;
+            padding: 12px 18px;
+            margin-bottom: 14px;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            animation: fadeInUp 0.6s ease 0.1s both;
+        }
+
+        .tips svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--accent);
+            flex-shrink: 0;
+        }
+
+        .tips span {
+            color: var(--text-primary);
+        }
+
+        .tips code {
+            background: var(--bg-overlay);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        /* ========== 功能特性 ========== */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 16px;
+            animation: fadeInUp 0.6s ease 0.2s both;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .feature-card h3 {
+            color: var(--text-primary);
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* ========== 示例区域 ========== */
+        .examples {
+            background: var(--bg-card);
+            border: 1px solid var(--border-primary);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            animation: fadeInUp 0.6s ease 0.3s both;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .examples-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 22px;
+            border-bottom: 1px solid var(--border-secondary);
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .examples-header svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--accent);
+        }
+
+        .example-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 22px;
+            border-bottom: 1px solid var(--border-secondary);
+            transition: background 0.2s;
+            cursor: pointer;
+            gap: 16px;
+        }
+
+        .example-item:last-child {
+            border-bottom: none;
+        }
+
+        .example-item:hover {
+            background: var(--accent-bg);
+        }
+
+        .example-label {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            min-width: 90px;
+            flex-shrink: 0;
+        }
+
+        .example-url {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 1.05rem;
+            color: var(--link-color);
+            word-break: break-all;
+            flex: 1;
+        }
+
+        .example-copy {
+            opacity: 0;
+            background: none;
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            padding: 6px 14px;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .example-item:hover .example-copy {
+            opacity: 1;
+        }
+
+        .example-copy:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .example-copy.copied {
+            opacity: 1;
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        /* ========== 页脚 ========== */
+        .footer {
+            text-align: center;
+            color: var(--text-tertiary);
+            font-size: 1rem;
+            padding-top: 6px;
+            animation: fadeInUp 0.6s ease 0.4s both;
+        }
+
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ========== Toast ========== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--toast-bg);
+            color: var(--toast-color);
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-size: 1rem;
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ========== 动画 ========== */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 640px) {
+            body {
+                padding: 16px 12px;
+                justify-content: flex-start;
+                overflow: auto;
+            }
+
+            .container {
+                max-width: 100%;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .subtitle {
+                font-size: 0.95rem;
+            }
+
+            .logo {
+                width: 48px;
+                height: 48px;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+
+            .feature-card {
+                padding: 14px;
+            }
+
+            .feature-icon {
+                font-size: 1.4rem;
+            }
+
+            .feature-card h3 {
+                font-size: 1rem;
+            }
+
+            .feature-card p {
+                font-size: 0.85rem;
+            }
+
+            .search-box {
+                flex-wrap: wrap;
+            }
+
+            .submit-btn {
+                width: 100%;
+                padding: 14px;
+                border-radius: 10px;
+            }
+
+            .node-select {
+                width: 100%;
+                max-width: 100%;
+                border-right: 1px solid var(--border-secondary);
+                border-radius: 10px 10px 0 0;
+                background-position: right 12px center;
+            }
+
+            .search-icon {
+                display: none;
+            }
+
+            .example-item {
+                flex-wrap: wrap;
+                gap: 6px;
+                padding: 10px 16px;
+            }
+
+            .example-label {
+                min-width: auto;
+            }
+
+            .example-copy {
+                opacity: 1;
+            }
+
+            .theme-toggle {
+                top: 12px;
+                right: 12px;
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 主题切换按钮 -->
+    <button class="theme-toggle" id="themeToggle" title="切换夜间模式">
+        <svg class="icon-moon" viewBox="0 0 16 16">
+            <path
+                d="M9.598 1.591a.75.75 0 0 1 .785-.175 7 7 0 1 1-8.967 8.967.75.75 0 0 1 .961-.96 5.5 5.5 0 0 0 7.22-7.832z" />
+        </svg>
+        <svg class="icon-sun" viewBox="0 0 16 16">
+            <path
+                d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0V.75A.75.75 0 0 1 8 0zm0 13a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 8 13zM2.343 2.343a.75.75 0 0 1 1.061 0l1.06 1.061a.75.75 0 0 1-1.06 1.06l-1.06-1.06a.75.75 0 0 1 0-1.06zm9.193 9.193a.75.75 0 0 1 1.06 0l1.061 1.06a.75.75 0 0 1-1.06 1.061l-1.061-1.06a.75.75 0 0 1 0-1.06zM16 8a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 16 8zM3 8a.75.75 0 0 1-.75.75H.75a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 3 8zm10.657-5.657a.75.75 0 0 1 0 1.061l-1.061 1.06a.75.75 0 1 1-1.06-1.06l1.06-1.06a.75.75 0 0 1 1.06 0zm-9.193 9.193a.75.75 0 0 1 0 1.06l-1.06 1.061a.75.75 0 1 1-1.061-1.06l1.06-1.061a.75.75 0 0 1 1.061 0z" />
+        </svg>
+    </button>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <svg viewBox="0 0 16 16">
+                    <path
+                        d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+                </svg>
+            </div>
+            <h1>GitHub 文件及 API 加速</h1>
+            <p class="subtitle">通过代理服务快速访问 GitHub 资源，提升下载速度及访问体验</p>
+        </header>
+
+        <div class="search-box">
+            <div class="search-icon">
+                <svg viewBox="0 0 16 16">
+                    <path
+                        d="M11.5 7a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0zm-.82 4.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 1 1-1.06 1.06l-3.04-3.04z" />
+                </svg>
+            </div>
+            <input type="text" class="url-input" placeholder="粘贴链接，如 https://github.com/user/repo ..." />
+            <select class="node-select" id="nodeSelect">
+                <option value="random">🎲 随机节点</option>
+            </select>
+            <button class="submit-btn">加速访问</button>
+        </div>
+
+        <div class="tips">
+            <svg viewBox="0 0 16 16">
+                <path
+                    d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75zm.75-2.75a1 1 0 1 1 2 0 1 1 0 0 1-2 0z" />
+            </svg>
+            <span>GitHub 链接自动走多节点加速，其他链接通过云函数代理转发。暂不支持文件夹下载。</span>
+        </div>
+
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>高速下载</h3>
+                <p>全球节点加速，大幅提升下载速度</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>安全可靠</h3>
+                <p>透明代理，不修改任何文件内容</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <h3>API 加速</h3>
+                <p>支持 GitHub API 请求加速访问</p>
+            </div>
+        </div>
+
+        <div class="examples">
+            <div class="examples-header">
+                <svg viewBox="0 0 16 16">
+                    <path
+                        d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.743 3.743 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.06 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75V1.75zm7.251 10.324l.004-5.073-.002-2.253A2.25 2.25 0 0 0 5.003 2.5H1.5v9h3.757a3.75 3.75 0 0 1 1.994.574zM8.755 4.75l-.004 7.322a3.752 3.752 0 0 1 1.992-.572H14.5v-9h-3.495a2.25 2.25 0 0 0-2.25 2.25z" />
+                </svg>
+                使用示例
+            </div>
+            <div class="example-item" data-url="https://github.com/expressjs/express/archive/refs/heads/master.zip">
+                <span class="example-label">分支源码</span>
+                <span class="example-url">github.com/expressjs/express/archive/master.zip</span>
+                <button class="example-copy">复制</button>
+            </div>
+            <div class="example-item" data-url="https://github.com/vuejs/core/archive/refs/tags/v3.5.13.tar.gz">
+                <span class="example-label">Release 源码</span>
+                <span class="example-url">github.com/vuejs/core/archive/v3.5.13.tar.gz</span>
+                <button class="example-copy">复制</button>
+            </div>
+            <div class="example-item"
+                data-url="https://github.com/electron/electron/releases/download/v33.3.1/electron-v33.3.1-win32-x64.zip">
+                <span class="example-label">Release 文件</span>
+                <span
+                    class="example-url">github.com/electron/electron/releases/download/.../electron-win32-x64.zip</span>
+                <button class="example-copy">复制</button>
+            </div>
+            <div class="example-item" data-url="https://github.com/torvalds/linux/blob/master/COPYING">
+                <span class="example-label">仓库文件</span>
+                <span class="example-url">github.com/torvalds/linux/blob/master/COPYING</span>
+                <button class="example-copy">复制</button>
+            </div>
+            <div class="example-item" data-url="https://raw.githubusercontent.com/vuejs/core/main/README.md">
+                <span class="example-label">Raw 文件</span>
+                <span class="example-url">raw.githubusercontent.com/vuejs/core/main/README.md</span>
+                <button class="example-copy">复制</button>
+            </div>
+            <div class="example-item" data-url="https://api.github.com/repos/vuejs/core">
+                <span class="example-label">API</span>
+                <span class="example-url">api.github.com/repos/vuejs/core</span>
+                <button class="example-copy">复制</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 GitHub 加速服务 &middot; 提升您的 GitHub 下载体验</p>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlInput = document.querySelector('.url-input');
+            const submitBtn = document.querySelector('.submit-btn');
+            const nodeSelect = document.getElementById('nodeSelect');
+            const toast = document.getElementById('toast');
+            const themeToggle = document.getElementById('themeToggle');
+            const html = document.documentElement;
+
+            // ========== 抓取 gh-proxy.com 的 REGIONS 域名 ==========
+            var proxyDomains = []; // 存储从 gh-proxy.com 提取的域名列表
+            var domainsReady = false;
+
+            fetch('https://gh-proxy.com/')
+                .then(function (res) { return res.text(); })
+                .then(function (htmlText) {
+                    var match = htmlText.match(/const\s+REGIONS\s*=\s*\[([\s\S]*?)\];/);
+                    if (match) {
+                        // 从 JS 对象字面量中提取所有 domain 值（单引号格式）
+                        var domains = [];
+                        var domainRegex = /domain:\s*'([^']+)'/g;
+                        var m;
+                        while ((m = domainRegex.exec(match[1])) !== null) {
+                            domains.push(m[1]);
+                        }
+                        if (domains.length > 0) {
+                            proxyDomains = domains;
+                            domainsReady = true;
+                            // 填充下拉选项
+                            domains.forEach(function (d, i) {
+                                var opt = document.createElement('option');
+                                opt.value = i;
+                                opt.textContent = '🚀 ' + d.replace(/^https?:\/\//, '');
+                                nodeSelect.appendChild(opt);
+                            });
+                        }
+                    }
+                })
+                .catch(function (err) {
+                    console.warn('获取加速节点失败:', err);
+                });
+
+            // ========== 判断是否为 GitHub 链接 ==========
+            var githubHosts = ['github.com', 'raw.githubusercontent.com', 'gist.github.com', 'gist.githubusercontent.com', 'api.github.com'];
+
+            function isGitHubUrl(url) {
+                try {
+                    var hostname = new URL(url).hostname;
+                    return githubHosts.some(function (h) {
+                        return hostname === h || hostname.endsWith('.' + h);
+                    });
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            // ========== 标准化 URL（补全协议头）==========
+            function normalizeUrl(url) {
+                url = url.trim();
+                if (!url) return '';
+                if (!/^https?:\/\//i.test(url)) {
+                    url = 'https://' + url;
+                }
+                return url;
+            }
+
+            // ========== 构建代理 URL ==========
+            function buildProxyUrl(url) {
+                url = normalizeUrl(url);
+                if (!url) return '';
+
+                if (isGitHubUrl(url) && domainsReady) {
+                    // GitHub 链接：根据下拉选择构建加速域名
+                    var domain;
+                    var selected = nodeSelect.value;
+                    if (selected === 'random') {
+                        domain = proxyDomains[Math.floor(Math.random() * proxyDomains.length)];
+                    } else {
+                        domain = proxyDomains[parseInt(selected)];
+                    }
+                    return 'https://' + domain + '/' + url;
+                } else {
+                    // 非 GitHub 链接：走云函数代理
+                    return location.origin + '/p?url=' + encodeURIComponent(url).replace('https%3A', 'ht-tps%3A').replace('http%3A', 'ht-tp%3A');
+                }
+            }
+
+            // ========== 主题切换 ==========
+            // 读取保存的主题或跟随系统偏好
+            var savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                html.setAttribute('data-theme', savedTheme);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                html.setAttribute('data-theme', 'dark');
+            }
+
+            themeToggle.addEventListener('click', function () {
+                var current = html.getAttribute('data-theme');
+                var next = current === 'dark' ? 'light' : 'dark';
+                html.setAttribute('data-theme', next);
+                localStorage.setItem('theme', next);
+                themeToggle.title = next === 'dark' ? '切换亮色模式' : '切换夜间模式';
+            });
+
+            // ========== 按钮点击 ==========
+            submitBtn.addEventListener('click', function () {
+                openUrl();
+            });
+
+            // ========== 回车提交 ==========
+            urlInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') openUrl();
+            });
+
+            // ========== 示例项点击 → 填入输入框 ==========
+            document.querySelectorAll('.example-item').forEach(function (item) {
+                item.addEventListener('click', function (e) {
+                    if (e.target.classList.contains('example-copy')) return;
+                    urlInput.value = this.dataset.url;
+                    urlInput.focus();
+                });
+            });
+
+            // ========== 复制按钮 ==========
+            document.querySelectorAll('.example-copy').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var url = this.closest('.example-item').dataset.url;
+                    var proxyUrl = buildProxyUrl(url);
+                    var text = proxyUrl;
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).then(fallback).catch(fallback);
+                    } else {
+                        fallback();
+                    }
+                    function fallback() {
+                        var ta = document.createElement('textarea');
+                        ta.value = text;
+                        ta.style.position = 'fixed';
+                        ta.style.opacity = '0';
+                        document.body.appendChild(ta);
+                        ta.select();
+                        try { document.execCommand('copy'); } catch (e) { }
+                        document.body.removeChild(ta);
+                        done();
+                    }
+                    function done() {
+                        btn.textContent = '已复制';
+                        btn.classList.add('copied');
+                        setTimeout(function () {
+                            btn.textContent = '复制';
+                            btn.classList.remove('copied');
+                        }, 1500);
+                    }
+                });
+            });
+
+            // ========== Toast 提示 ==========
+            function showToast(msg) {
+                toast.textContent = msg;
+                toast.classList.add('show');
+                setTimeout(function () {
+                    toast.classList.remove('show');
+                }, 2500);
+            }
+
+            // ========== 打开URL ==========
+            function openUrl() {
+                var url = urlInput.value.trim();
+                if (!url) {
+                    showToast('请输入链接');
+                    urlInput.focus();
+                    return;
+                }
+                var proxyUrl = buildProxyUrl(url);
+                window.open(proxyUrl, '_blank');
+                urlInput.value = '';
+                showToast('已在新窗口打开加速链接');
+            }
+        });
+    </script>
+</body>
+
+</html>
